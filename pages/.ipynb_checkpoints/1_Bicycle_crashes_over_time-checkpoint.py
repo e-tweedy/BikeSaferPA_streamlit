@@ -110,6 +110,6 @@ if df.shape[0]>0:
     fig.update_xaxes(categoryorder="array",
                     categoryarray=period_data[period][2],
                     dtick=1)
-    st.plotly_chart(fig)
+    st.plotly_chart(fig,use_container_width=True)
 else:
     st.markdown('#### No samples meet these criteria. Please remove some factors.')
