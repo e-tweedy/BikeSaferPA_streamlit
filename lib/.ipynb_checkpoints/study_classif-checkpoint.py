@@ -5,14 +5,14 @@ import seaborn as sns
 import shap
 from sklearn.feature_selection import chi2, SelectKBest, mutual_info_classif, f_classif
 from sklearn.metrics import accuracy_score, log_loss, confusion_matrix, f1_score, fbeta_score, roc_auc_score
-from sklearn.metrics import ConfusionMatrixDisplay, RocCurveDisplay, classification_report
+from sklearn.metrics import ConfusionMatrixDisplay, RocCurveDisplay, classification_report, precision_recall_curve
 from sklearn.model_selection import train_test_split, RepeatedStratifiedKFold, cross_val_score, RandomizedSearchCV, StratifiedKFold
 from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler, FunctionTransformer, SplineTransformer, PolynomialFeatures
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import HistGradientBoostingClassifier, GradientBoostingClassifier
-from xgboost import XGBClassifier
-from imblearn.over_sampling import RandomOverSampler
+# from xgboost import XGBClassifier
+# from imblearn.over_sampling import RandomOverSampler
 from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.utils.validation import check_is_fitted
 from sklearn.impute import SimpleImputer
@@ -74,7 +74,7 @@ class ClassifierStudy():
         self.pipe, self.pipe_fitted = None, None
         self.classifier_name = classifier_name
         self.X_val, self.y_val = None, None
-        self.y_predica_proba = None
+        self.y_predict_proba = None
         self.best_params, self.best_n_components = None, None
         self.shap_vals = None
     
@@ -383,7 +383,7 @@ class ClassifierStudy():
                                 n_iter=n_iter, scoring = scoring, cv = cv,refit=refit,
                                 random_state=self.random_state, n_jobs=n_jobs)
         
-        rs.fit(X_train,y_train)
+        rs.fit(X,self.y)
     
         # Display top n scores
         results = rs.cv_results_
@@ -445,24 +445,24 @@ class ClassifierStudy():
         X_train = X_train[[feat for feat_type in self.features for feat in self.features[feat_type]]]
         
         # If XGB early stopping, then need to split off eval_set and define fit_params
-        if isinstance(self.pipe[-1],XGBClassifier):
-            if self.pipe[-1].get_params()['early_stopping_rounds'] is not None:
-                X_train,X_es,y_train,y_es = train_test_split(X_train,y_train,
-                                                               test_size=eval_size,
-                                                               stratify=y_train,
-                                                               random_state=self.random_state)
-                trans_pipe = self.pipe[:-1]
-                trans_pipe.fit_transform(X_train)
-                X_es = trans_pipe.transform(X_es)
-                clf_name = self.pipe.steps[-1][0]
-                fit_params = {f'{clf_name}__eval_set':[(X_es,y_es)],
-                              f'{clf_name}__eval_metric':eval_metric,
-                             f'{clf_name}__verbose':0}
-            else:
-                fit_params = {}
-        else:
-            fit_params = {}
-        
+        # if isinstance(self.pipe[-1],XGBClassifier):
+        #     if self.pipe[-1].get_params()['early_stopping_rounds'] is not None:
+        #         X_train,X_es,y_train,y_es = train_test_split(X_train,y_train,
+        #                                                        test_size=eval_size,
+        #                                                        stratify=y_train,
+        #                                                        random_state=self.random_state)
+        #         trans_pipe = self.pipe[:-1]
+        #         trans_pipe.fit_transform(X_train)
+        #         X_es = trans_pipe.transform(X_es)
+        #         clf_name = self.pipe.steps[-1][0]
+        #         fit_params = {f'{clf_name}__eval_set':[(X_es,y_es)],
+        #                       f'{clf_name}__eval_metric':eval_metric,
+        #                      f'{clf_name}__verbose':0}
+        #     else:
+        #         fit_params = {}
+        # else:
+        #     fit_params = {}
+        fit_params = {}
         # Fit and store fitted pipeline. If no classifier, fit_transform X_train and store transformed version
         pipe = self.pipe
         if 'clf' in step_list[-1]:
@@ -677,7 +677,46 @@ class ClassifierStudy():
             ax.tick_params(axis='y', labelsize='xx-small')
         plt.tight_layout()
         plt.show()
-		
+    
+    def find_best_threshold(self,beta=1,conf=True,report=True, print_result=True):
+        """
+        Computes the classification threshold which gives the
+        best F_beta score from classifier predictions,
+        prints the best threshold and the corresponding F_beta score,
+        and displays a confusion matrix and classification report
+        corresponding to that threshold
+
+        Parameters:
+        -----------
+        beta : float
+            the desired beta value in the F_beta score
+        conf : bool
+            whether to display confusion matrix
+        report : bool
+            whether to display classification report
+        print_result : bool
+            whether to print a line reporting the best threshold
+            and resulting F_beta score
+        
+        Returns: None (prints results and stores self.best_thresh)
+        --------
+        """
+        prec,rec,threshs = precision_recall_curve(self.y_val,
+                                                  self.y_predict_proba)
+        F_betas = (1+beta**2)*(prec*rec)/((beta**2*prec)+rec)
+        # Above formula is valid when TP!=0.  When TP==0
+        # it gives np.nan whereas F_beta should be 0
+        F_betas = np.nan_to_num(F_betas)
+        idx = np.argmax(F_betas)
+        best_thresh = threshs[idx]
+        if print_result:
+            print(f'Threshold optimizing F_{beta} score:   {best_thresh}\nBest F_{beta} score:   {F_betas[idx]}')
+        if conf:
+            self.score_pipeline(scoring='conf',thresh=best_thresh,beta=beta)
+        if report:
+            self.score_pipeline(scoring='classif_report',thresh=best_thresh,beta=beta)
+        self.best_thresh = best_thresh
+
 class LRStudy(ClassifierStudy):
     """
     A child class of ClassifierStudy which has an additional method specific to logistic regression
@@ -743,3 +782,5 @@ class LRStudy(ClassifierStudy):
         self.score = score
         self.coeff = coeff
         self.coeff_zero_features = coeff_zero_features
+        
+            

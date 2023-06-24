@@ -11,8 +11,8 @@ from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler,
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import HistGradientBoostingClassifier, GradientBoostingClassifier
-from xgboost import XGBClassifier
-from imblearn.over_sampling import RandomOverSampler
+# from xgboost import XGBClassifier
+# from imblearn.over_sampling import RandomOverSampler
 from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.utils.validation import check_is_fitted
 from sklearn.impute import SimpleImputer
@@ -445,24 +445,24 @@ class ClassifierStudy():
         X_train = X_train[[feat for feat_type in self.features for feat in self.features[feat_type]]]
         
         # If XGB early stopping, then need to split off eval_set and define fit_params
-        if isinstance(self.pipe[-1],XGBClassifier):
-            if self.pipe[-1].get_params()['early_stopping_rounds'] is not None:
-                X_train,X_es,y_train,y_es = train_test_split(X_train,y_train,
-                                                               test_size=eval_size,
-                                                               stratify=y_train,
-                                                               random_state=self.random_state)
-                trans_pipe = self.pipe[:-1]
-                trans_pipe.fit_transform(X_train)
-                X_es = trans_pipe.transform(X_es)
-                clf_name = self.pipe.steps[-1][0]
-                fit_params = {f'{clf_name}__eval_set':[(X_es,y_es)],
-                              f'{clf_name}__eval_metric':eval_metric,
-                             f'{clf_name}__verbose':0}
-            else:
-                fit_params = {}
-        else:
-            fit_params = {}
-        
+        # if isinstance(self.pipe[-1],XGBClassifier):
+        #     if self.pipe[-1].get_params()['early_stopping_rounds'] is not None:
+        #         X_train,X_es,y_train,y_es = train_test_split(X_train,y_train,
+        #                                                        test_size=eval_size,
+        #                                                        stratify=y_train,
+        #                                                        random_state=self.random_state)
+        #         trans_pipe = self.pipe[:-1]
+        #         trans_pipe.fit_transform(X_train)
+        #         X_es = trans_pipe.transform(X_es)
+        #         clf_name = self.pipe.steps[-1][0]
+        #         fit_params = {f'{clf_name}__eval_set':[(X_es,y_es)],
+        #                       f'{clf_name}__eval_metric':eval_metric,
+        #                      f'{clf_name}__verbose':0}
+        #     else:
+        #         fit_params = {}
+        # else:
+        #     fit_params = {}
+        fit_params = {}
         # Fit and store fitted pipeline. If no classifier, fit_transform X_train and store transformed version
         pipe = self.pipe
         if 'clf' in step_list[-1]:
