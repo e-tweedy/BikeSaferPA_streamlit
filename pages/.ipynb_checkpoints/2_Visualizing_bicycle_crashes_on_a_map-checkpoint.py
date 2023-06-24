@@ -32,7 +32,7 @@ city_data = {'Philadelphia':67301,'Pittsburgh':2301,
              'Bensalem':9202,'Abington':46101,
              'Bethlehem':39302,'Lancaster':36301}
 
-st.markdown('This tool provides interactive maps showing crash events involving cyclists.  Choose a geographic locale and an animation method below.  Crash event dots are color-coded based on whether the crash involved serious cyclist injury, cyclist fatality, or neither.')
+st.markdown('This tool provides interactive maps showing crash events involving cyclists in PA, either statewide or in one of several population centers.  Choose a geographic locale and an animation method below.  Crash event dots are color-coded based on whether the crash involved serious cyclist injury, cyclist fatality, or neither.')
 
 geo = st.selectbox('Select a geographic range for the plot:',
                    ['Statewide']+list(sorted(city_data.keys())))
