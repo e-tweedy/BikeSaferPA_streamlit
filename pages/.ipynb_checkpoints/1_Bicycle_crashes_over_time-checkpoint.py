@@ -17,10 +17,10 @@ st.subheader('Visualizing bicycle crashes in PA over time')
 
 col1,col2 = st.columns(2)
 
-period_data = {'hour':('hour of the day','HOUR_OF_DAY',list(range(24))),
-                'day':('day of the week','DAY_OF_WEEK',['Sun']+list(cal.day_abbr)[:-1]),
-                'month':('month of the year','CRASH_MONTH',list(cal.month_abbr)[1:]),
-                'year':('year','CRASH_YEAR',list(range(2002,2022)))}
+period_data = {'hour':('hour of the day','HOUR_OF_DAY',list(range(24)),list(range(24))),
+                'day':('day of the week','DAY_OF_WEEK',list(range(1,8)),['Sun']+list(cal.day_abbr)[:-1]),
+                'month':('month of the year','CRASH_MONTH',list(range(1,13)),list(cal.month_abbr)[1:]),
+                'year':('year','CRASH_YEAR',list(range(2002,2022)),list(range(2002,2022)))}
 cohort_data = {'all':'all crashes involving bicycles',
                 'inj':'at least one serious cyclist injury',
                 'fat':'at least one cyclist fatality'}
@@ -107,9 +107,13 @@ if df.shape[0]>0:
                      xaxis_title=period_data[period][0],
                      # legend_traceorder='reversed',
                      legend_title_text=legend_title)
-    fig.update_xaxes(categoryorder="array",
-                    categoryarray=period_data[period][2],
-                    dtick=1)
+    fig.update_xaxes(tickmode='array',
+                     ticktext=period_data[period][3],
+                     tickvals=period_data[period][2]
+                    # categoryorder="array",
+                    # categoryarray=period_data[period][2],
+                    # dtick=1
+                    )
     st.plotly_chart(fig,use_container_width=True)
 else:
     st.markdown('#### No samples meet these criteria. Please remove some factors.')
