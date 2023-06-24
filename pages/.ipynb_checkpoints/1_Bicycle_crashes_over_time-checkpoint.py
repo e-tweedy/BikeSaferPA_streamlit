@@ -15,8 +15,6 @@ crashes = get_data('crashes.csv')
 st.header('BikeSaferPA visualization suite')
 st.subheader('Visualizing bicycle crashes in PA over time')
 
-col1,col2 = st.columns(2)
-
 period_data = {'hour':('hour of the day','HOUR_OF_DAY',list(range(24))),
                 'day':('day of the week','DAY_OF_WEEK',['Sun']+list(cal.day_abbr)[:-1]),
                 'month':('month of the year','CRASH_MONTH',list(cal.month_abbr)[1:]),
@@ -24,16 +22,6 @@ period_data = {'hour':('hour of the day','HOUR_OF_DAY',list(range(24))),
 cohort_data = {'all':'all crashes involving bicycles',
                 'inj':'at least one serious cyclist injury',
                 'fat':'at least one cyclist fatality'}
-with col1:
-    period = st.selectbox(
-            'Plot a histogram of cyclist crashes by:',
-            list(period_data.keys()),index=3,
-            format_func = lambda x:period_data[x][0])
-with col2:
-    cohort = st.selectbox(
-            'Plot the following type of crashes:',
-            list(cohort_data.keys()),index=0,
-            format_func = lambda x:cohort_data[x])
 cat_data = {'urban':('by urban, rural, or urbanized setting','URBAN_RURAL','Crash setting'),
             'coll_type':('by collision type','COLLISION_TYPE','Collision type'),
             'int_type':('by intersection type','INTERSECT_TYPE','Intersection type'),
@@ -41,11 +29,49 @@ cat_data = {'urban':('by urban, rural, or urbanized setting','URBAN_RURAL','Cras
             'weather':('by weather status','WEATHER','Weather status'),
             'tcd':('by traffic control device present','TCD_TYPE','Traffic control device')
               }
-stratify = st.selectbox('Stratify crashes by one of the following categorical features:',
-                   ['no']+list(cat_data.keys()),index=0,
-                   format_func = lambda x:cat_data[x][0] if x!='no' else 'do not stratify')
+bin_data = [{'drink':['at least one drinking driver','DRINKING_DRIVER',False],
+            'drug':['at least one drugged driver','DRUGGED_DRIVER',False],
+            'speed':['at least one driver speeding','SPEEDING',False],
+            'agg':['at least one aggressive driver','AGGRESSIVE_DRIVING',False],
+            'red':['at least one driver running red light','RUNNING_RED_LT',False],
+            'stop':['at least one driver running stop sign','RUNNING_STOP_SIGN',False],
+            },
+            {'suv':['at least one SUV','SUV',False],
+            'ht':['at least one heavy truck','HEAVY_TRUCK',False],
+            'st':['at least one small truck','SMALL_TRUCK',False],
+            'com':['at least one commercial vehicle','COMM_VEHICLE',False],
+            'bus':['at least one bus','BUS',False],
+            'van':['at least one van','VAN',False]
+            }]
 
 df = crashes.copy()
+
+with st.expander('Click here to expand or collapse plot options menu'):
+    col1,col2 = st.columns(2)
+    with col1:
+        period = st.selectbox(
+            'Plot a histogram of cyclist crashes by:',
+            list(period_data.keys()),index=3,
+            format_func = lambda x:period_data[x][0])
+    with col2:
+        cohort = st.selectbox(
+            'Plot the following type of crashes:',
+            list(cohort_data.keys()),index=0,
+            format_func = lambda x:cohort_data[x])
+    stratify = st.selectbox('Stratify crashes by one of the following categorical features:',
+                   ['no']+list(cat_data.keys()),index=0,
+                   format_func = lambda x:cat_data[x][0] if x!='no' else 'do not stratify')
+    st.markdown('Restrict to crashes containing the following factor(s):')
+    title_add = ''
+    
+    cols = st.columns(len(bin_data))
+    for k,col in enumerate(cols):
+        with col:
+            for feat in bin_data[k]:
+                bin_data[k][feat][2]=st.checkbox(bin_data[k][feat][0],key=feat)
+                if bin_data[k][feat][2]:
+                    df = df[df[bin_data[k][feat][1]]==1]
+                    title_add+= ', '+bin_data[k][feat][0].split('one ')[-1]
 
 if stratify=='int_type':
     df['INTERSECT_TYPE']=df['INTERSECT_TYPE'].replace({cat:'other' for cat in crashes.INTERSECT_TYPE.value_counts().index[3:]})
@@ -66,32 +92,7 @@ elif cohort == 'fat':
 
 if period in ['day','month']:
     df[period_data[period][1]] = df[period_data[period][1]].apply(lambda x:period_data[period][2][x-1])
-    
-st.markdown('Restrict to crashes containing the following factor(s):')
 
-title_add = ''
-bin_data = [{'drink':['at least one drinking driver','DRINKING_DRIVER',False],
-            'drug':['at least one drugged driver','DRUGGED_DRIVER',False],
-            'speed':['at least one driver speeding','SPEEDING',False],
-            'agg':['at least one aggressive driver','AGGRESSIVE_DRIVING',False],
-            'red':['at least one driver running red light','RUNNING_RED_LT',False],
-            'stop':['at least one driver running stop sign','RUNNING_STOP_SIGN',False],
-            },
-            {'suv':['at least one SUV','SUV',False],
-            'ht':['at least one heavy truck','HEAVY_TRUCK',False],
-            'st':['at least one small truck','SMALL_TRUCK',False],
-            'com':['at least one commercial vehicle','COMM_VEHICLE',False],
-            'bus':['at least one bus','BUS',False],
-            'van':['at least one van','VAN',False]
-            }]
-cols = st.columns(len(bin_data))
-for k,col in enumerate(cols):
-    with col:
-        for feat in bin_data[k]:
-            bin_data[k][feat][2]=st.checkbox(bin_data[k][feat][0],key=feat)
-            if bin_data[k][feat][2]:
-                df = df[df[bin_data[k][feat][1]]==1]
-                title_add+= ', '+bin_data[k][feat][0].split('one ')[-1]
 if len(title_add)>0:
     title_add = '<br>with'+title_add.lstrip(',')
 

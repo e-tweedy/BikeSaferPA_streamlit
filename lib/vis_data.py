@@ -253,7 +253,7 @@ from scipy import stats
 #     # Display stylized dataframe
 #     display((perc_change.astype('str')+'%').style.background_gradient(axis=None,cmap='bwr',gmap=perc_change,vmin=-100,vmax=100))
 	
-def plot_map(df,city=None,animate=True,animate_by='year',show_fig=True,return_fig=False):
+def plot_map(df,city=None,county=None,animate=True,color_dots=True,animate_by='year',show_fig=True,return_fig=False):
     """
     Displays a plotly.express.scatter_mapbox interactive map
     of crashes in a municipality if specified, or otherwise
@@ -263,17 +263,28 @@ def plot_map(df,city=None,animate=True,animate_by='year',show_fig=True,return_fi
     -----------
     df : pd.DataFrame
         dataframe of crash samples
-    city : tuple or none
+    city or county : tuple or None
         if provided, must be a tuple (code,name)
         - code : str
-            the code corresponding to the desired municipality
+            the code corresponding to the desired municipality/county
             (see the data dictionary)
         - name : str
-            the name you want to use for the municipality
+            the name you want to use for the municipality/county
             in plot title
+        * At most one of these can be not None!
     animate : bool
         if animate==True, then the map will animate using
         the frequency provided in animate_by
+    color_dots : bool
+        if color_dots==True, then dots will be color-coded by
+        'serious injury or death' status.
+        WARNING: if color_dots and animate, then all frames
+        will be missing samples in 'serious injury or death'
+        classes which aren't present in first frame - due to
+        bug in plotly animation_frame implementation.
+        Recommend only using both when geographic
+        area is statewide or at least has all values of
+        'serious injury or death' in first frame
     animate_by : str
         the desired animation frequency, must be
         either 'year' or 'month'
@@ -285,10 +296,11 @@ def plot_map(df,city=None,animate=True,animate_by='year',show_fig=True,return_fi
    Returns: Either figure or None
    --------
     """
+    assert (city is None)|(county is None), 'A city and county cannot both be provided.'
     # Copy df and create new column for color coding event type
     df = df.copy()
-    df.loc[df.BICYCLE_SUSP_SERIOUS_INJ_COUNT>0,'Serious cyclist injury or death']='death'
-    df.loc[df.BICYCLE_DEATH_COUNT>0,'Serious cyclist injury or death']='serious injury'
+    df.loc[df.BICYCLE_SUSP_SERIOUS_INJ_COUNT>0,'Serious cyclist injury or death']='serious injury'
+    df.loc[df.BICYCLE_DEATH_COUNT>0,'Serious cyclist injury or death']='death'
     df['Serious cyclist injury or death']=df['Serious cyclist injury or death'].fillna('neither')
     
     # Set animation parameters
@@ -310,13 +322,24 @@ def plot_map(df,city=None,animate=True,animate_by='year',show_fig=True,return_fi
         animation_frame = None
         title_animate = ''
     
-    # Adjustments for when city is provided 
+    if color_dots:
+        color='Serious cyclist injury or death'
+    else:
+        color=None
+    
+    # Adjustments for when city or county are provided
     if city is not None:
         df = df[df.MUNICIPALITY==city[0]]
         # Ignore extreme outlier samples - lat,lon may be incorrect
         df = df[np.abs(stats.zscore(df.DEC_LAT))<=4]
         df = df[np.abs(stats.zscore(df.DEC_LONG))<=4]
         title_place = city[1]+', PA'
+    elif county is not None:
+        df = df[df.COUNTY==county[0]]
+        # Ignore extreme outlier samples - lat,lon may be incorrect
+        df = df[np.abs(stats.zscore(df.DEC_LAT))<=4]
+        df = df[np.abs(stats.zscore(df.DEC_LONG))<=4]
+        title_place = county[1]+' county, PA'
     else:
         title_place = 'PA'
     
@@ -333,19 +356,24 @@ def plot_map(df,city=None,animate=True,animate_by='year',show_fig=True,return_fi
     
     # Adjust width so that aspect ratio matches shape of state
     width_mult = (max_lon-min_lon)/(max_lat-min_lat)
-    
+    cols  = ['CRN','DEC_LAT','DEC_LONG','Serious cyclist injury or death','CRASH_YEAR','CRASH_MONTH']
+    if animate_by=='month':
+        cols.append('DATE')
     # Plot mapbox
     fig = px.scatter_mapbox(df, lat='DEC_LAT',lon='DEC_LONG',
-                            color='Serious cyclist injury or death',
+                            color=color,
                             color_discrete_map={'neither':'royalblue','serious injury':'orange','death':'crimson'},
                             mapbox_style='open-street-map',
                             animation_frame = animation_frame,
+                            animation_group='CRN',
                             hover_data = {'DEC_LAT':False,'DEC_LONG':False,
-                                         'CRASH_YEAR':True,'CRASH_MONTH':True},
+                                         'CRASH_YEAR':True,'CRASH_MONTH':True,
+                                         'Serious cyclist injury or death':True},
                             width = width_mult*500,height=700,zoom=zoom,
                             center={'lat':lat_center,'lon':lon_center},
-                            title=f'Crashes involving bicycles{title_animate} in {title_place}, 2002-2021')
-    fig.update_layout(legend=dict(orientation='h',xanchor='right',yanchor='bottom',x=1,y=1.02))
+                            title=f'Crashes involving bicycles{title_animate}<br> in {title_place}, 2002-2021')
+    fig.update_layout(legend=dict(orientation='h',xanchor='right',yanchor='bottom',x=1,y=-0.12),
+                     legend_title_side='top')
     if show_fig:
         fig.show()
     if return_fig:
