@@ -17,10 +17,10 @@ st.subheader('Visualizing bicycle crashes in PA over time')
 
 col1,col2 = st.columns(2)
 
-period_data = {'hour':('hour of the day','HOUR_OF_DAY',list(range(24)),list(range(24))),
-                'day':('day of the week','DAY_OF_WEEK',list(range(1,8)),['Sun']+list(cal.day_abbr)[:-1]),
-                'month':('month of the year','CRASH_MONTH',list(range(1,13)),list(cal.month_abbr)[1:]),
-                'year':('year','CRASH_YEAR',list(range(2002,2022)),list(range(2002,2022)))}
+period_data = {'hour':('hour of the day','HOUR_OF_DAY',list(range(24))),
+                'day':('day of the week','DAY_OF_WEEK',['Sun']+list(cal.day_abbr)[:-1]),
+                'month':('month of the year','CRASH_MONTH',list(cal.month_abbr)[1:]),
+                'year':('year','CRASH_YEAR',list(range(2002,2022)))}
 cohort_data = {'all':'all crashes involving bicycles',
                 'inj':'at least one serious cyclist injury',
                 'fat':'at least one cyclist fatality'}
@@ -44,12 +44,28 @@ cat_data = {'urban':('by urban, rural, or urbanized setting','URBAN_RURAL','Cras
 stratify = st.selectbox('Stratify crashes by one of the following categorical features:',
                    ['no']+list(cat_data.keys()),index=0,
                    format_func = lambda x:cat_data[x][0] if x!='no' else 'do not stratify')
+
+df = crashes.copy()
+
+if stratify=='int_type':
+    df['INTERSECT_TYPE']=df['INTERSECT_TYPE'].replace({cat:'other' for cat in crashes.INTERSECT_TYPE.value_counts().index[3:]})
+if stratify=='coll_type':
+    df['COLLISION_TYPE']=df['COLLISION_TYPE'].replace({cat:'other' for cat in crashes.COLLISION_TYPE.value_counts().index[6:]})
+if stratify=='weather':
+    df['WEATHER']=df['WEATHER'].replace({cat:'other' for cat in crashes.WEATHER.value_counts().index[5:]})
+if stratify=='tcd':
+    df['TCD_TYPE']=df['TCD_TYPE'].replace({cat:'other' for cat in crashes.TCD_TYPE.value_counts().index[3:]})
+df=df.dropna(subset=period_data[period][1])
+
+category_orders = {cat_data[cat][1]:list(df[cat_data[cat][1]].value_counts().index) for cat in cat_data}
+
 if cohort == 'inj':
-    df = crashes[crashes.BICYCLE_SUSP_SERIOUS_INJ_COUNT > 0]
+    df = df[df.BICYCLE_SUSP_SERIOUS_INJ_COUNT > 0]
 elif cohort == 'fat':
-    df = crashes[crashes.BICYCLE_DEATH_COUNT > 0]
-else:
-    df=crashes
+    df = df[df.BICYCLE_DEATH_COUNT > 0]
+
+if period in ['day','month']:
+    df[period_data[period][1]] = df[period_data[period][1]].apply(lambda x:period_data[period][2][x-1])
     
 st.markdown('Restrict to crashes containing the following factor(s):')
 
@@ -79,19 +95,6 @@ for k,col in enumerate(cols):
 if len(title_add)>0:
     title_add = '<br>with'+title_add.lstrip(',')
 
-if stratify=='int_type':
-    df['INTERSECT_TYPE']=df['INTERSECT_TYPE'].replace({cat:'other' for cat in crashes.INTERSECT_TYPE.value_counts().index[3:]})
-if stratify=='coll_type':
-    df['COLLISION_TYPE']=df['COLLISION_TYPE'].replace({cat:'other' for cat in crashes.COLLISION_TYPE.value_counts().index[6:]})
-if stratify=='weather':
-    df['WEATHER']=df['WEATHER'].replace({cat:'other' for cat in crashes.WEATHER.value_counts().index[5:]})
-if stratify=='tcd':
-    df['TCD_TYPE']=df['TCD_TYPE'].replace({cat:'other' for cat in crashes.TCD_TYPE.value_counts().index[3:]})
-df=df.dropna(subset=period_data[period][1])
-
-if period in ['day of the week','month of the year']:
-    df[period_data[period][1]] = df[period_data[period][1]].apply(lambda x:period_data[period][2][x-1])
-
 if stratify=='no':
     color,legend_title = None,None
 else:
@@ -102,18 +105,14 @@ if df.shape[0]>0:
     fig = px.histogram(df, x=period_data[period][1],color=color,nbins=len(period_data[period][2]),
                       title=f'PA bicycle crashes 2002-2021 by {period_data[period][0]} - {cohort_data[cohort]}'\
                        +title_add,
-                      category_orders = {cat_data[cat][1]:list(df[cat_data[cat][1]].value_counts().index) for cat in cat_data})
+                      category_orders = category_orders)
     fig.update_layout(bargap=0.2,
                      xaxis_title=period_data[period][0],
                      # legend_traceorder='reversed',
                      legend_title_text=legend_title)
-    fig.update_xaxes(tickmode='array',
-                     ticktext=period_data[period][3],
-                     tickvals=period_data[period][2]
-                    # categoryorder="array",
-                    # categoryarray=period_data[period][2],
-                    # dtick=1
-                    )
+    fig.update_xaxes(categoryorder="array",
+                    categoryarray=period_data[period][2],
+                    dtick=1)
     st.plotly_chart(fig,use_container_width=True)
 else:
     st.markdown('#### No samples meet these criteria. Please remove some factors.')
