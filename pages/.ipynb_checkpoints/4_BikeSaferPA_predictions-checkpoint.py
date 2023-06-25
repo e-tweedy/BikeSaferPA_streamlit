@@ -26,11 +26,11 @@ st.header('BikeSaferPA visualization suite')
 st.subheader('Predicting cyclist outcome with BikeSaferPA')
 
 st.markdown("""
-An instance of the BikeSaferPA predictive model has been trained in the background on all cyclist samples in the PENNDOT dataset.  This model is a gradient-boosted decision tree classifier model, and the model selection process is covered in detail in [this Jupyter notebook](https://e-tweedy.github.io/3_BikeSaferPA_models.html).  
+An instance of the BikeSaferPA predictive model has been trained in the background on all cyclist samples in the PENNDOT dataset.  This model is a gradient-boosted decision tree classifier model, and the model selection process is covered in detail in [this Jupyter notebook](https://e-tweedy.github.io/3_BikeSaferPA_models.html).
 
 The purpose of this tool is to allow the user to simulate a model prediction on a hypothetical sample, and then explain the model's prediction using SHAP values.
 
-Expand the following sections to adjust the factors in a hypothetical cyclist crash, and the model will provide a predicted probability that the cyclist involved suffers serious injury or fatality.
+Expand the following sections to adjust the factors in a hypothetical cyclist crash, and the model will provide a predicted probability that the cyclist involved suffers serious injury or fatality.  You'll find that some factors influence the prediction significantly, and others very little.
 """)
 
 ########
@@ -194,14 +194,14 @@ for feat in ['HOUR_OF_DAY','DAY_OF_WEEK','CRASH_MONTH','COUNTY','MUNICIPALITY']:
 # Predict and report result
 study.predict_proba_pipeline(X_test=sample)
 
-st.write(f'BikeSaferPA predicts a :red[{100*float(study.y_predict_proba):.2f}%] probability that a cyclist suffers serious injury or fatality under these conditions.')
+st.write(f'**BikeSaferPA predicts a :red[{100*float(study.y_predict_proba):.2f}%] probability that a cyclist suffers serious injury or fatality under these conditions.**')
 
 st.subheader('SHAP analysis for this hypothetical prediction')
 
 st.markdown("""
-SHAP (SHapley Additive exPlainer) values provide an excellent method for assessing how various input features influence a model's predictions.  One significant advantage is that SHAP values are 'model agnostic' - they effectively explain the predictions made by many different types of machine learning classifiers, including the gradient boosted decision tree model used in BikeSaferPA.
+SHAP (SHapley Additive exPlainer) values provide an excellent method for assessing how various input features influence a model's predictions.  One significant advantage is that SHAP values are 'model agnostic' - they effectively explain the predictions made by many different types of machine learning classifiers.
 
-The following 'force plot' shows the influence of each feature's SHAP value on the model's predicted probability that the cyclist suffers serious injury or fatality. A feature with a positive (resp. negative) SHAP value indicates that the feature's value pushes the predicted probability higher (resp. lower), which in the force plot corresponds to a push to the right (resp. left).  SHAP values can be interpreted as having units in the 'log-odds' space.
+The following 'force plot' shows the influence of each feature's SHAP value on the model's predicted probability that the cyclist suffers serious injury or fatality. A feature with a positive (resp. negative) SHAP value indicates that the feature's value pushes the predicted probability higher (resp. lower), which in the force plot corresponds to a push to the right (resp. left).
 
 The force plot will update as you adjust input features in the menu above.
 """)
