@@ -443,7 +443,8 @@ def feat_perc_bar(feat,df,feat_name=None,cohort_name=None,show_fig=True,return_f
         category_orders[feat]=ordering
     fig = px.bar(table,y='cohort',x='percentage',color=feat,
                  barmode='stack',text_auto='.1%',
-                category_orders=category_orders)
+                category_orders=category_orders,
+                title=f'Distributions of {feat} values within cyclist cohorts')
     fig.update_yaxes(tickangle=-90)
     fig.update_xaxes(tickformat=".0%")
     if show_fig:

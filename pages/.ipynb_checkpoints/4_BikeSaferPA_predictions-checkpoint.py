@@ -177,8 +177,9 @@ with st.expander('Click here to expand or collapse categorical features'):
                                                       cat_data['COLLISION_TYPE'],
                                                       format_func= lambda x:x.replace('_',' ')\
                                                                    .replace('dir','direction'))
-        sample.loc[0,'FEMALE'] = st.selectbox('Cyclist identifies as female?',[0,1],
-                                             format_func = lambda x:'yes' if x==1 else 'no')
+        sample.loc[0,'FEMALE'] = st.selectbox('Cyclist sex:*',[1,0],
+                                             format_func = lambda x:'F' if x==1 else 'M')
+        st.markdown('*Note: the PENNDOT dataset only has a binary sex feature.')
     
 with st.expander('Click here to expand or collapse binary features'):
     cols = st.columns(len(bin_data))
