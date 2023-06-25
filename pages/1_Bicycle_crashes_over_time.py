@@ -17,7 +17,7 @@ st.subheader('Visualizing bicycle crashes in PA over time')
 
 st.markdown("""
 This tool provides plots of cyclist crash counts by year, month of the year, day of the week, or hour of the day and can stratify the counts by various crash features.
-            
+
 Expand the toolbox below to choose plot options.
 """)
 

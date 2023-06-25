@@ -26,7 +26,9 @@ st.header('BikeSaferPA visualization suite')
 st.subheader('Predicting cyclist outcome with BikeSaferPA')
 
 st.markdown("""
-An instance of the BikeSaferPA predictice model has been trained in the background on all cyclist samples in the PENNDOT dataset.
+An instance of the BikeSaferPA predictive model has been trained in the background on all cyclist samples in the PENNDOT dataset.  This model is a gradient-boosted decision tree classifier model, and the model selection process is covered in detail in [this Jupyter notebook](https://e-tweedy.github.io/3_BikeSaferPA_models.html).  
+
+The purpose of this tool is to allow the user to simulate a model prediction on a hypothetical sample, and then explain the model's prediction using SHAP values.
 
 Expand the following sections to adjust the factors in a hypothetical cyclist crash, and the model will provide a predicted probability that the cyclist involved suffers serious injury or fatality.
 """)

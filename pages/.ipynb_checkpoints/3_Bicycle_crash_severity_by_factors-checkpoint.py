@@ -97,3 +97,5 @@ if feature == 'DAY_OF_WEEK':
         fig.data[idx].name = day
         fig.data[idx].hovertemplate = day
 st.plotly_chart(fig,use_container_width=True)
+
+st.markdown('See [this Jupyter notebook](https://e-tweedy.github.io/2_BikeSaferPA_vis.html) for a in-depth data exploration and visualization process.')
