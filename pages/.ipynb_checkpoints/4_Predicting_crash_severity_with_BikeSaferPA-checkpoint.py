@@ -17,6 +17,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import HistGradientBoostingClassifier, GradientBoostingClassifier
 from lib.study_classif import ClassifierStudy
+import pickle
 
 st.sidebar.title('BikeSaferPA')
 
@@ -29,8 +30,6 @@ cyclists = get_data('cyclists.csv')
 # Define additional binary features
 cyclists['HILL'] = cyclists.GRADE.isin(['downhill','uphill','bottom_hill','top_hill']).astype(int)
 cyclists['FEMALE'] = cyclists['SEX'].replace({'F':1,'M':0})
-# for tcd_type in ['traffic_signal','flashing_traffic_signal','stop_sign']:
-#     cyclists[f'TCD_{tcd_type}'] = (cyclists.TCD_TYPE==tcd_type).astype(int)
 
 #Prepare input and target data
 features = {'cyc': ['DAY_OF_WEEK', 'HOUR_OF_DAY'],
@@ -48,24 +47,12 @@ features = {'cyc': ['DAY_OF_WEEK', 'HOUR_OF_DAY'],
                      'NHTSA_AGG_DRIVING','CROSS_MEDIAN','RUNNING_RED_LT',
                      'RUNNING_STOP_SIGN','TAILGATING','SPEEDING_RELATED',
                      'MATURE_DRIVER','YOUNG_DRIVER',
-                     # 'TCD_flashing_traffic_signal','TCD_stop_sign','TCD_traffic_signal',
                     ]}
 TARGET = 'SERIOUS_OR_FATALITY'
 
 X,y = cyclists[sum(features.values(),[])],cyclists[TARGET]
-# X_train, X_test, y_train, y_test = train_test_split(X,y,stratify=y,
-#                                                     test_size=0.2,
-#                                                     random_state=42)
 
 # Initialize and fit the classifier pipeline
-@st.cache_resource
-def fit_model(_clf,X,y,features):
-    study = ClassifierStudy(clf,X,y,features=features)
-    study.build_pipeline(cyc_method=None,num_ss=False)
-    study.fit_pipeline()
-    st.write('Done fitting the model!')
-    return study
-
 params={'l2_regularization': 2.4238734679222236,
          'learning_rate': 0.14182851952262968,
          'max_depth': 2,
@@ -73,9 +60,18 @@ params={'l2_regularization': 2.4238734679222236,
 clf = HistGradientBoostingClassifier(early_stopping=True,max_iter=2000,
                                      n_iter_no_change=50,random_state=42,
                                     **params,class_weight='balanced')
-study = fit_model(clf,X,y,features)
+study = ClassifierStudy(clf,X,y,features=features)
+study.build_pipeline(cyc_method=None,num_ss=False)
+study.fit_pipeline()
 
+# Dump to pickle
+filename = 'study.pkl'
+pickle.dump(study, open(filename, 'wb'))
 
+# Load trained pipeline from pickle
+study = pickle.load(open(filename, 'rb'))
+
+# Helper objects for collecting input settings
 cat_data = {'ILLUMINATION':['daylight','dark_unlit','dark_lit','dusk','dawn'],
            'URBAN_RURAL':['urban','rural','urbanized'],
            'VEH_ROLE':['striking','struck','striking_struck'],
@@ -116,7 +112,8 @@ veh_data = [('SUV','SUV'),
             ('van','VAN'),
             ('commercial vehicle','COMM_VEH')]
 
-sample = pd.DataFrame(columns = X.columns)
+# Initialize input sample and fill with user inputs
+sample = pd.DataFrame(columns = study.pipe['col'].feature_names_in_)
 
 with st.expander('Click here to expand or collapse numerical features'):
     cols = st.columns(3)
@@ -173,8 +170,12 @@ with st.expander('Click here to expand or collapse binary features'):
         with col:
             for feat in bin_data[k]:
                 sample.loc[0,bin_data[k][feat][1]]=int(st.checkbox(bin_data[k][feat][0],key=feat))
+
+# Fill these arbitrarily - they won't influence inference
 for feat in ['HOUR_OF_DAY','DAY_OF_WEEK','CRASH_MONTH','COUNTY','MUNICIPALITY']:
     sample.loc[0,feat]=1
+
+# Predict and report result
 study.predict_proba_pipeline(X_test=sample)
 
 st.write(f'Probability that the cyclist is seriously injured or killed:  {100*float(study.y_predict_proba):.2f}%')
