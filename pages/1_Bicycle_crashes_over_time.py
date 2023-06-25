@@ -4,7 +4,7 @@ import streamlit as st
 import calendar as cal
 import plotly.express as px
 
-st.sidebar.title('BikeSaferPA')
+st.sidebar.title('BikeSaferPA suite')
 
 @st.cache_data
 def get_data(filename):
@@ -14,6 +14,12 @@ crashes = get_data('crashes.csv')
 
 st.header('BikeSaferPA visualization suite')
 st.subheader('Visualizing bicycle crashes in PA over time')
+
+st.markdown("""
+This tool provides plots of cyclist crash counts by year, month of the year, day of the week, or hour of the day and can stratify the counts by various crash features.
+            
+Expand the toolbox below to choose plot options.
+""")
 
 period_data = {'hour':('hour of the day','HOUR_OF_DAY',list(range(24))),
                 'day':('day of the week','DAY_OF_WEEK',['Sun']+list(cal.day_abbr)[:-1]),
