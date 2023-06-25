@@ -21,7 +21,7 @@ def get_data(filename):
 
 crashes = get_data('crashes.csv')
 
-st.header('BikeSaferPA visualization suite')
+st.header('BikeSaferPA: understanding cyclist outcomes')
 st.subheader('Mapping bicycle crashes in PA')
 
 county_data = {'Philadelphia':67,'Allegheny':2,

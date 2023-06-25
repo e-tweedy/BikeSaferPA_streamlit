@@ -12,7 +12,7 @@ def get_data(filename):
 
 crashes = get_data('crashes.csv')
 
-st.header('BikeSaferPA visualization suite')
+st.header('BikeSaferPA: understanding cyclist outcomes')
 st.subheader('Visualizing bicycle crashes in PA over time')
 
 st.markdown("""

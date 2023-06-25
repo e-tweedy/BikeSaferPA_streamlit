@@ -5,7 +5,7 @@ import calendar as cal
 
 st.sidebar.title('BikeSaferPA suite')
 
-st.header('BikeSaferPA visualization suite')
+st.header('BikeSaferPA: understanding cyclist outcomes')
 st.subheader('Visualizing distributions of features')
 
 st.markdown("""
