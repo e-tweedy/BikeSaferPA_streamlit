@@ -379,106 +379,161 @@ def plot_map(df,city=None,county=None,animate=True,color_dots=True,animate_by='y
     if return_fig:
         return fig
 	
-# def feat_perc(feat, df, col_name = 'percentage', feat_name = None):
-#     """
-#     Constructs a single-column dataframe 'perc'
-#     containing the value counts in the series
-#     df[feat] as percentages of the whole.
-#     - 'df' is the input dataframe.
-#     - 'feat' is the desired column of df.
-#     - 'col_name' is the name of the
-#     column of the output dataframe
-#     - 'feat_name' is the index name
-#     of the output dataframe if provided, otherwise
-#     will use 'feat' as index name.
-#     """
-#     perc = pd.DataFrame({col_name:df[feat].value_counts(normalize=True).sort_index()})
-#     if feat_name:
-#         perc.index.name=feat_name
-#     else:
-#         perc.index.name=feat
-#     return perc
+def feat_perc(feat, df, col_name = 'percentage', feat_name = None):
+    """
+    Constructs a single-column dataframe 'perc'
+    containing the value counts in the series
+    df[feat] as percentages of the whole.
+    - 'df' is the input dataframe.
+    - 'feat' is the desired column of df.
+    - 'col_name' is the name of the
+    column of the output dataframe
+    - 'feat_name' is the index name
+    of the output dataframe if provided, otherwise
+    will use 'feat' as index name.
+    """
+    perc = pd.DataFrame({col_name:df[feat].value_counts(normalize=True).sort_index()})
+    if feat_name:
+        perc.index.name=feat_name
+    else:
+        perc.index.name=feat
+    return perc
+
+def feat_perc_bar(feat,df,feat_name=None,cohort_name=None,show_fig=True,return_fig=False,sort=False):
+    """
+    Makes barplot of two series:
+        - distribution of feature among all cyclists
+        - distribution of feature among cyclists with serious injury or fatality
+
+    Parameters:
+    -----------
+    feat : str
+        The column name of the desired feature
+    df : pd.DataFrame
+        The input dataframe
+    feat_name : str or None
+        The feature name to use in the
+        x-axis label.  If None, will use feat
+    cohort_name : str or None
+        qualifier to use in front of 'cyclists'
+        in titles, if provided, e.g. 'rural cyclists'
+    show_fig : bool
+        whether to finish with fig.show()
+    return_fig : bool
+        whether to return the fig object
+    sort : bool
+        whether to sort bars. If False, will use default sorting
+        by category name or feature value.  If True, will resort
+        in descending order by percentage
+
+    Returns: figure or None
+    --------
+    """
+    if feat_name is None:
+        feat_name=feat
+    df_inj = df.query('SERIOUS_OR_FATALITY==1')
+    table = feat_perc(feat,df)
+    table.loc[:,'cohort']='all'
+    ordering = list(table['percentage'].sort_values(ascending=False).index) if sort else None
+    table_inj = feat_perc(feat,df_inj)
+    table_inj.loc[:,'cohort']='seriously injured or killed'
+    table = pd.concat([table,table_inj],axis=0).reset_index()
+    category_orders = {'cohort':['all','seriously injured or killed']}
+    if sort:
+        category_orders[feat]=ordering
+    fig = px.bar(table,y='cohort',x='percentage',color=feat,
+                 barmode='stack',text_auto='.1%',
+                category_orders=category_orders)
+    fig.update_yaxes(tickangle=-90)
+    fig.update_xaxes(tickformat=".0%")
+    if show_fig:
+        fig.show()
+    if return_fig:
+        return fig
     
-# def feat_perc_comp(feat,df,feat_name=None,cohort_name = None,merge_inj_death=True):
-#     """
-#     Returnes a styled dataframe (Styler object) 'perc_comp'
-#     whose underlying dataframe has three columns
-#     containing value counts of 'feat' among:
-#     - all cyclists involved in crashes
-#     - cyclists suffering serious injury or fatality
-#     each formatted as percentages of the series sum.
-#     Styled with bars comparing percentages
-#     Inputs:
-#     - 'df' is cyclists by default, but can be changed
-#     e.g. if you want to filter the samples
-#     - 'feat' if the desired feature to use
-#     - 'feat_name' is the index name
-#     of the output dataframe if provided, otherwise
-#     will use 'feat' as index name.
-#     - 'cohort_name' is a qualifier in front
-#     of "cyclists" in titles, if provided
-#     (e.g. "urban")
-#     - if merge_inj_death is set to False,
-#     then cyclists suffering serious injury and
-#     the cyclists suffering fatality will be separated
-#     into separate columns (three total columns)
+def feat_perc_comp(feat,df,feat_name=None,cohort_name = None,merge_inj_death=True):
+    """
+    Returns a styled dataframe (Styler object)
+    whose underlying dataframe has three columns
+    containing value counts of 'feat' among:
+    - all cyclists involved in crashes
+    - cyclists suffering serious injury or fatality
+    each formatted as percentages of the series sum.
+    Styled with bars comparing percentages
+
+    Parameters:
+    -----------
+    feat : str
+        The column name of the desired feature
+    df : pd.DataFrame
+        The input dataframe
+    feat_name : str or None
+        The feature name to use in the output dataframe
+        index name.  If None, will use feat
+    cohort_name : str or None
+        qualifier to use in front of 'cyclists'
+        in titles, if provided, e.g. 'rural cyclists'
+    merge_inj_death : bool
+        whether to merge seriously injured and killed cohorts
+    Returns:
+    --------
+    perc_comp : pd.Styler object
+    """
+    # Need qualifier for titles if restricting cyclist cohort
+    qualifier = cohort_name if cohort_name is not None else ''
     
-#     """
-#     # Need qualifier for titles if restricting cyclist cohort
-#     qualifier = cohort_name if cohort_name is not None else ''
+    # Two columns or three, depending on merge_inj_death
+    if merge_inj_death:
+        perc_comp = feat_perc(feat,df=df,feat_name=feat_name,
+                         col_name='all cyclists',)\
+                .merge(feat_perc(feat,feat_name=feat_name,
+                                 df=df.query('SERIOUS_OR_FATALITY==1'),
+                                 col_name=qualifier+'cyclists with serious injury or fatality'),
+                      on=feat,how='left')
+        perc_comp = perc_comp[perc_comp.max(axis=1)>=0.005]
+    else:
+        perc_comp = feat_perc(feat,df=df,feat_name=feat_name,
+                         col_name='all cyclists')\
+                .merge(feat_perc(feat,feat_name=feat_name,
+                                 df=df.query('INJ_SEVERITY=="susp_serious_injury"'),
+                                 col_name=qualifier+'cyclists with serious injury'),
+                      on=feat,how='left')\
+                .merge(feat_perc(feat,feat_name=feat_name,
+                                 df=df.query('INJ_SEVERITY=="killed"'),
+                                 col_name=qualifier+'cyclists with fatality'),
+                      on=feat,how='left')
     
-#     # Two columns or three, depending on merge_inj_death
-#     if merge_inj_death:
-#         perc_comp = feat_perc(feat,df=df,feat_name=feat_name,
-#                          col_name='all cyclists',)\
-#                 .merge(feat_perc(feat,feat_name=feat_name,
-#                                  df=df.query('SERIOUS_OR_FATALITY==1'),
-#                                  col_name=qualifier+'cyclists with serious injury or fatality'),
-#                       on=feat,how='left')
-#         perc_comp = perc_comp[perc_comp.max(axis=1)>=0.005]
-#     else:
-#         perc_comp = feat_perc(feat,df=df,feat_name=feat_name,
-#                          col_name='all cyclists')\
-#                 .merge(feat_perc(feat,feat_name=feat_name,
-#                                  df=df.query('INJ_SEVERITY=="susp_serious_injury"'),
-#                                  col_name=qualifier+'cyclists with serious injury'),
-#                       on=feat,how='left')\
-#                 .merge(feat_perc(feat,feat_name=feat_name,
-#                                  df=df.query('INJ_SEVERITY=="killed"'),
-#                                  col_name=qualifier+'cyclists with fatality'),
-#                       on=feat,how='left')
+    # If feature is not ordinal, sort rows descending by crash counts
+    if feat not in ['AGE_BINS','SPEED_LIMIT','DAY_OF_WEEK','HOUR_OF_DAY']:
+        perc_comp=perc_comp.sort_values(by='all cyclists',ascending=False)
     
-#     # If feature is not ordinal, sort rows descending by crash counts
-#     if feat not in ['AGE_BINS','SPEED_LIMIT','DAY_OF_WEEK','HOUR_OF_DAY']:
-#         perc_comp=perc_comp.sort_values(by='all cyclists',ascending=False)
+    # Relabel day numbers with strings
+    if feat == 'DAY_OF_WEEK':
+        perc_comp.index=['Sun','Mon','Tues','Wed','Thurs','Fri','Sat']
+        perc_comp.index.name='DAY_OF_WEEK'
+    perc_comp=perc_comp.fillna(0)
+    table_columns = list(perc_comp.columns)
     
-#     # Relabel day numbers with strings
-#     if feat == 'DAY_OF_WEEK':
-#         perc_comp.index=['Sun','Mon','Tues','Wed','Thurs','Fri','Sat']
-#         perc_comp.index.name='DAY_OF_WEEK'
-#     perc_comp=perc_comp.fillna(0)
-#     table_columns = list(perc_comp.columns)
-    
-#     # Define format for displaying floats
-#     format_dict={col:'{:.2%}' for col in perc_comp.columns}
+    # Define format for displaying floats
+    format_dict={col:'{:.2%}' for col in perc_comp.columns}
 
         
-#     # Define table styles
-#     styles = [dict(selector="caption",
-#                    props=[("text-align", "center"),
-#                           ("font-size", "100%"),
-#                           ("color", 'black'),
-#                           ("text-decoration","underline"),
-#                           ("font-weight","bold")])]
+    # Define table styles
+    styles = [dict(selector="caption",
+                   props=[("text-align", "center"),
+                          ("font-size", "100%"),
+                          ("color", 'black'),
+                          ("text-decoration","underline"),
+                          ("font-weight","bold")])]
     
-#     # Return formatted dataframe
-#     if feat_name is None:
-#         feat_name=feat
-#     caption = f'Breakdown of {feat_name} among cyclist groups'
-#     return perc_comp.reset_index().style.set_table_attributes("style='display:inline'")\
-#                                     .format(format_dict).bar(color='powderblue',
-#                                     subset=table_columns).hide_index().set_caption(caption)\
-#                                     .set_table_styles(styles)
+    # Return formatted dataframe
+    if feat_name is None:
+        feat_name=feat
+    caption = f'Breakdown of {feat_name} among cyclist groups'
+    return perc_comp.reset_index().style.set_table_attributes("style='display:inline'")\
+                                    .format(format_dict).bar(color='powderblue',
+                                    subset=table_columns).hide().set_caption(caption)\
+                                    .set_table_styles(styles)
 
 # def gray_empty(val):
 #     """
