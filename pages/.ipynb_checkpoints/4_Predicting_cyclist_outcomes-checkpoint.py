@@ -220,5 +220,6 @@ def st_shap(plot, height=None):
     shap_html = f"<head>{shap.getjs()}</head><body>{plot.html()}</body>"
     components.html(shap_html, height=height)
 
-fig=shap.plots.force(explainer.expected_value,shap_values.values,sample_trans,figsize=(20,3),show=False,matplotlib=True)
+fig=shap.plots.force(explainer.expected_value,shap_values.values,sample_trans,
+                     figsize=(20,3),show=False,matplotlib=True)
 st.pyplot(fig)
