@@ -17,12 +17,15 @@ Expand the following menu to choose a feature, and the graph will show its distr
 
 Pay particular attention to feature values which become more or less prevalent among cyclists suffering serious injury or death - for instance, 6.2% of all cyclists were involved in a head-on collision, whereas 11.8% of those with serious injury or fatality were in a head-on collision.
 """)
+
+# Get dataset
 @st.cache_data
 def get_data(filename):
     return pd.read_csv(filename)
 
 cyclists = get_data('cyclists.csv')
 
+# Data used for input elements and plot elements
 feature_names = {'AGE_BINS':'cyclist age (binned)',
                  'SEX':'cyclist sex',
                  'RESTRAINT_HELMET':'cyclist helmet status',
@@ -75,18 +78,24 @@ flag_features = ['BUS', 'HEAVY_TRUCK', 'SMALL_TRUCK', 'SUV','COMM_VEHICLE',
 features = cat_features+flag_features+ord_features
 features.sort(key=lambda x:feature_names[x].lower())
 
+# Expander containing plot option user input
 with st.expander('Click here to expand or collapse feature selection menu'):
+    # Feature selectbox
     feature = st.selectbox('Show distributions of this feature:',features,
                           format_func = lambda x:feature_names[x])
+
+# Recast binary and day of week data
 if feature not in ord_features:
     cyclists[feature]=cyclists[feature].replace({1:'yes',0:'no'})
 if feature == 'DAY_OF_WEEK':
     cyclists[feature]=cyclists[feature].astype(str)
-#     cyclists[feature]=cyclists[feature]\
-#                     .replace({k+1:day for k,day in enumerate(['Sun']+list(cal.day_abbr)[:-1])})
+    
+# Generate plot
 sort = False if feature in ord_features else True
 fig = feat_perc_bar(feature,cyclists, feat_name=feature_names[feature],
                     return_fig=True,show_fig=False,sort=sort)
+
+# Adjust some colorscale and display settings
 if feature == 'SPEED_LIMIT':
     fig.update_coloraxes(colorscale='YlOrRd',cmid=35)
 if feature == 'HOUR_OF_DAY':
@@ -96,6 +105,8 @@ if feature == 'DAY_OF_WEEK':
     for idx, day in enumerate(days):
         fig.data[idx].name = day
         fig.data[idx].hovertemplate = day
+
+# Display plot
 st.plotly_chart(fig,use_container_width=True)
 
 st.markdown('See [this Jupyter notebook](https://e-tweedy.github.io/2_BikeSaferPA_vis.html) for a in-depth data exploration and visualization process.')

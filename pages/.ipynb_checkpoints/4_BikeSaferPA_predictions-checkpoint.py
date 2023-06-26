@@ -2,9 +2,6 @@ import streamlit as st
 import streamlit.components.v1 as components
 import numpy as np
 import pandas as pd
-# import matplotlib.pyplot as plt
-# import seaborn as sns
-# plt.style.use('fivethirtyeight')
 from IPython.display import display
 import warnings
 warnings.filterwarnings("ignore")
@@ -13,10 +10,7 @@ pd.set_option('display.max_columns', None)
 pd.set_option('display.max_colwidth',None)
 import scipy.stats as ss
 import shap
-from sklearn.metrics import ConfusionMatrixDisplay, RocCurveDisplay
-from sklearn.model_selection import train_test_split
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import HistGradientBoostingClassifier, GradientBoostingClassifier
+from sklearn.ensemble import HistGradientBoostingClassifier
 from lib.study_classif import ClassifierStudy
 import pickle
 
@@ -87,7 +81,7 @@ filename = 'study.pkl'
 # Load trained pipeline from pickle
 study = pickle.load(open(filename, 'rb'))
 
-# Helper objects for collecting input settings
+# Data used for input elements and plot elements
 cat_data = {'ILLUMINATION':['daylight','dark_unlit','dark_lit','dusk','dawn'],
            'URBAN_RURAL':['urban','rural','urbanized'],
            'VEH_ROLE':['striking','struck','striking_struck'],
@@ -128,9 +122,10 @@ veh_data = [('SUV','SUV'),
             ('van','VAN'),
             ('commercial vehicle','COMM_VEH')]
 
-# Initialize input sample and fill with user inputs
+# Initialize input sample.  User inputs will update values.
 sample = pd.DataFrame(columns = study.pipe['col'].feature_names_in_)
 
+# Expander for numerical inputs
 with st.expander('Click here to expand or collapse numerical features'):
     cols = st.columns(3)
     with cols[0]:
@@ -148,6 +143,7 @@ with st.expander('Click here to expand or collapse numerical features'):
         for k in [3,4]:
             sample.loc[0,f'{veh_data[k][1]}_COUNT']=st.number_input(f'# {veh_data[k][0]}s involved:',
                                                                     min_value=0,step=1,max_value=3)
+# Expander for categorical inputs
 with st.expander('Click here to expand or collapse categorical features'):
     cols = st.columns(3)
     with cols[0]:
@@ -180,7 +176,8 @@ with st.expander('Click here to expand or collapse categorical features'):
         sample.loc[0,'FEMALE'] = st.selectbox('Cyclist sex:*',[1,0],
                                              format_func = lambda x:'F' if x==1 else 'M')
         st.markdown('*Note: the PENNDOT dataset only has a binary sex feature.')
-    
+
+# Expander for binary inputs
 with st.expander('Click here to expand or collapse binary features'):
     cols = st.columns(len(bin_data))
     for k,col in enumerate(cols):
@@ -188,7 +185,9 @@ with st.expander('Click here to expand or collapse binary features'):
             for feat in bin_data[k]:
                 sample.loc[0,bin_data[k][feat][1]]=int(st.checkbox(bin_data[k][feat][0],key=feat))
 
-# Fill these arbitrarily - they won't influence inference
+# Fill these columns arbitrarily - they won't affect inference
+# COUNTY, MUNICIPALITY, HOUR_OF_DAY, CRASH_MONTH used in pipeline for NaN imputation
+# This version of model doesn't use temporal features as we set cyc_method=None
 for feat in ['HOUR_OF_DAY','DAY_OF_WEEK','CRASH_MONTH','COUNTY','MUNICIPALITY']:
     sample.loc[0,feat]=1
 
