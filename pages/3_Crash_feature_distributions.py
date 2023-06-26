@@ -6,10 +6,10 @@ import calendar as cal
 st.sidebar.title('BikeSaferPA suite')
 
 st.header('BikeSaferPA: understanding cyclist outcomes')
-st.subheader('Visualizing distributions of features')
+st.subheader('Visualizing crash feature distributions')
 
 st.markdown("""
-The tools on this page will help us to visualize the distributions of values of various crash features over two groups:
+The tools on this page will demonstrate how distributions of values of various crash and cyclist features vary between two groups:
 - all cyclists involved in crashes, and
 - those cyclists who suffered serious injury or fatality
 
