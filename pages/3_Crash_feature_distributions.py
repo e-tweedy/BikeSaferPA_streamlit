@@ -13,9 +13,9 @@ The tools on this page will demonstrate how distributions of values of various c
 - all cyclists involved in crashes, and
 - those cyclists who suffered serious injury or fatality
 
-Expand the following menu to choose a feature, and the graph will show its distribution of its values (via percentages) over the two groups.
+Expand the following menu to choose a feature, and the graph will show its distribution of its values (via percentages) over the two groups.  Again you may restrict to Philadelpha county only, or the PA counties in the greater Philadelphia area (Bucks, Chester, Delaware, Montgomery, and Philadelphia).
 
-Pay particular attention to feature values which become more or less prevalent among cyclists suffering serious injury or death - for instance, 6.2% of all cyclists were involved in a head-on collision, whereas 11.8% of those with serious injury or fatality were in a head-on collision.
+Pay particular attention to feature values which become more or less prevalent among cyclists suffering serious injury or death - for instance, 6.2% of all cyclists statewide were involved in a head-on collision, whereas 11.8% of those with serious injury or fatality were in a head-on collision.
 """)
 
 # Get dataset
@@ -75,15 +75,28 @@ flag_features = ['BUS', 'HEAVY_TRUCK', 'SMALL_TRUCK', 'SUV','COMM_VEHICLE',
                  'FATIGUE_ASLEEP','IMPAIRED_DRIVER',
                  'MATURE_DRIVER','YOUNG_DRIVER','NO_CLEARANCE']
 
+geo_data = {'statewide':['All of Pennsylvania',None],
+           'greater_phila':['Greater Philadelphia area',[67, 9, 15, 23, 46]],
+           'phila':['Philadelphia County',[67]]}
+
 features = cat_features+flag_features+ord_features
 features.sort(key=lambda x:feature_names[x].lower())
 
 # Expander containing plot option user input
 with st.expander('Click here to expand or collapse feature selection menu'):
+    # Geographic restriction selectbox
+    geo = st.selectbox(
+        'Geographic scope:',
+        list(geo_data.keys()),index=0,
+        format_func = lambda x:geo_data[x][0])
     # Feature selectbox
     feature = st.selectbox('Show distributions of this feature:',features,
                           format_func = lambda x:feature_names[x])
 
+# Geographic restriction
+if geo != 'statewide':
+    cyclists = cyclists[cyclists.COUNTY.isin(geo_data[geo][1])]
+    
 # Recast binary and day of week data
 if feature not in ord_features:
     cyclists[feature]=cyclists[feature].replace({1:'yes',0:'no'})

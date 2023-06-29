@@ -19,6 +19,8 @@ st.subheader('Visualizing bicycle crashes in PA over time')
 st.markdown("""
 This tool provides plots of cyclist crash counts by year, month of the year, day of the week, or hour of the day and can stratify the counts by various crash features.
 
+You also have the option to restrict to Philadelpha county only, or the PA counties in the greater Philadelphia area (Bucks, Chester, Delaware, Montgomery, and Philadelphia).
+
 Expand the toolbox below to choose plot options.
 """)
 
@@ -51,26 +53,35 @@ bin_data = [{'drink':['at least one drinking driver','DRINKING_DRIVER',False],
             'bus':['at least one bus','BUS',False],
             'van':['at least one van','VAN',False]
             }]
+geo_data = {'statewide':['All of Pennsylvania',None],
+           'greater_phila':['Greater Philadelphia area',[67, 9, 15, 23, 46]],
+           'phila':['Philadelphia County',[67]]}
 
 # Expander containing plot option user input
 with st.expander('Click here to expand or collapse plot options menu'):
-    col1,col2 = st.columns(2)
-    # Time period selectbox
+    col1,col2 = st.columns([0.4,0.6])
     with col1:
+        # Geographic restriction selectbox
+        geo = st.selectbox(
+            'Geographic scope:',
+            list(geo_data.keys()),index=0,
+            format_func = lambda x:geo_data[x][0])
+        # Time period selectbox
         period = st.selectbox(
-            'Plot a histogram of cyclist crashes by:',
+            'Time period:',
             list(period_data.keys()),index=3,
             format_func = lambda x:period_data[x][0])
-    # Cyclist cohort selectbox
+    
     with col2:
+        # Cyclist cohort selectbox
         cohort = st.selectbox(
-            'Plot the following type of crashes:',
+            'Crash severity:',
             list(cohort_data.keys()),index=0,
             format_func = lambda x:cohort_data[x])
-    # Category stratification selectbox
-    stratify = st.selectbox('Stratify crashes by one of the following categorical features:',
-                   ['no']+list(cat_data.keys()),index=0,
-                   format_func = lambda x:cat_data[x][0] if x!='no' else 'do not stratify')
+        # Category stratification selectbox
+        stratify = st.selectbox('Stratify crashes by:',
+                       ['no']+list(cat_data.keys()),index=0,
+                       format_func = lambda x:cat_data[x][0] if x!='no' else 'do not stratify')
     st.markdown('Restrict to crashes containing the following factor(s):')
     title_add = ''
     
@@ -85,16 +96,23 @@ with st.expander('Click here to expand or collapse plot options menu'):
                 if bin_data[k][feat][2]:
                     crashes = crashes[crashes[bin_data[k][feat][1]]==1]
                     title_add+= ', '+bin_data[k][feat][0].split('one ')[-1]
-                    
+
+# Geographic restriction
+if geo != 'statewide':
+    crashes = crashes[crashes.COUNTY.isin(geo_data[geo][1])]
 # Relegate rare categories to 'other' for plot readability
 if stratify=='int_type':
-    crashes['INTERSECT_TYPE']=crashes['INTERSECT_TYPE'].replace({cat:'other' for cat in crashes.INTERSECT_TYPE.value_counts().index[3:]})
+    crashes['INTERSECT_TYPE']=crashes['INTERSECT_TYPE']\
+    .replace({cat:'other' for cat in crashes.INTERSECT_TYPE.value_counts().index[3:]})
 if stratify=='coll_type':
-    crashes['COLLISION_TYPE']=crashes['COLLISION_TYPE'].replace({cat:'other' for cat in crashes.COLLISION_TYPE.value_counts().index[6:]})
+    crashes['COLLISION_TYPE']=crashes['COLLISION_TYPE']\
+    .replace({cat:'other' for cat in crashes.COLLISION_TYPE.value_counts().index[6:]})
 if stratify=='weather':
-    crashes['WEATHER']=crashes['WEATHER'].replace({cat:'other' for cat in crashes.WEATHER.value_counts().index[5:]})
+    crashes['WEATHER']=crashes['WEATHER']\
+    .replace({cat:'other' for cat in crashes.WEATHER.value_counts().index[5:]})
 if stratify=='tcd':
-    crashes['TCD_TYPE']=crashes['TCD_TYPE'].replace({cat:'other' for cat in crashes.TCD_TYPE.value_counts().index[3:]})
+    crashes['TCD_TYPE']=crashes['TCD_TYPE']\
+    .replace({cat:'other' for cat in crashes.TCD_TYPE.value_counts().index[3:]})
 crashes=crashes.dropna(subset=period_data[period][1])
 
 # Order categories in descending order by frequency
