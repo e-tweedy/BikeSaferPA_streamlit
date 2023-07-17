@@ -8,13 +8,9 @@ This web app provides a suite of tools to accompany Eamonn Tweedy's [BikeSaferPA
 
 ### Repository components:
 - 'cyclists.csv' and 'crashes.csv' : datasets used for analysis
-- 'Welcome_to_BikeSaferPA.py' : main streamlit app page
+- 'app.py' : main streamlit app page
 - 'study.pkl' : trained BikeSaferPA machine learning model
-- 'pages' : directory containing streamlit app sub-pages:
-    - '1_Bicycle_crashes_over_time.py' : page for plotting data over time
-    - '2_Mapping_bicycle_crashes.py' : page for generating maps
-    - '3_Crash_feature_distributions.py': page for visualizing distibution of crash features
-    - '4_BikeSaferPA_predictions.py' : page for experimenting with and explaining BikeSaferPA model predictions
+- 'app_data.pkl' : prepared data used for user input widget labels
 - 'lib' : directory of custom modules
     - 'vis_data.py' : data visualization functions
     - 'transform_data'py' : data transformation functions
