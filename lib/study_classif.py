@@ -11,8 +11,7 @@ from sklearn.preprocessing import OneHotEncoder, OrdinalEncoder, StandardScaler,
 from sklearn.decomposition import PCA
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import HistGradientBoostingClassifier, GradientBoostingClassifier
-# from xgboost import XGBClassifier
-# from imblearn.over_sampling import RandomOverSampler
+# from lightgbm import LGBMClassifier
 from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.utils.validation import check_is_fitted
 from sklearn.impute import SimpleImputer
@@ -276,10 +275,11 @@ class ClassifierStudy():
         # Restrict to features supplied in self.features
         X = self.X[[feat for feat_type in self.features for feat in self.features[feat_type]]]
         
-        xgb_es=False
-        if isinstance(self.pipe[-1],XGBClassifier):
-            if self.pipe[-1].get_params()['early_stopping_rounds'] is not None:
-                xgb_es=True
+        lgb_es=False
+        # if isinstance(self.pipe[-1],LGBMClassifier):
+        #     if 'early_stopping_round' in self.pipe[-1].get_params():
+        #         if self.pipe[-1].get_params()['early_stopping_rounds'] is not None:
+        #             lgb_es=True
 
         scores = []
         # Iterate over folds and train, predict, score
@@ -290,7 +290,7 @@ class ClassifierStudy():
             fold_y_test = self.y.iloc[test_idx]
             
             pipe=clone(self.pipe)
-            if xgb_es:
+            if lgb_es:
                 fold_X_train,fold_X_es,fold_y_train,fold_y_es = train_test_split(fold_X_train,fold_y_train,
                                                                                  stratify=fold_y_train,test_size=eval_size,
                                                                                  random_state=self.random_state)
@@ -413,7 +413,7 @@ class ClassifierStudy():
             if True, a train_test_split will be performed first
             and the validation set will be stored
         early_stopping : bool
-            Indicates whether we will use early_stopping for xgboost.
+            Indicates whether we will use early_stopping for lightgbm.
             If true, will split off an eval set prior to k-fold split
         eval_size : float
             Fraction of the training set to use for early stopping eval set
@@ -444,8 +444,8 @@ class ClassifierStudy():
         # Restrict to features supplied in self.features
         X_train = X_train[[feat for feat_type in self.features for feat in self.features[feat_type]]]
         
-        # If XGB early stopping, then need to split off eval_set and define fit_params
-        # if isinstance(self.pipe[-1],XGBClassifier):
+        # If LGBM early stopping, then need to split off eval_set and define fit_params
+        # if isinstance(self.pipe[-1],LGBMClassifier):
         #     if self.pipe[-1].get_params()['early_stopping_rounds'] is not None:
         #         X_train,X_es,y_train,y_es = train_test_split(X_train,y_train,
         #                                                        test_size=eval_size,
@@ -599,25 +599,26 @@ class ClassifierStudy():
         X_train = X_train[[feat for feat_type in self.features for feat in self.features[feat_type]]]
         X_test = X_test[[feat for feat_type in self.features for feat in self.features[feat_type]]]
         
-        # If XGB early stopping, then need to split off eval_set and define fit_params
-        if isinstance(self.pipe[-1],XGBClassifier):
-            if self.pipe[-1].get_params()['early_stopping_rounds'] is not None:
-                X_train,X_es,y_train,y_es = train_test_split(X_train,y_train,
-                                                               test_size=eval_size,
-                                                               stratify=y_train,
-                                                               random_state=self.random_state)
-                trans_pipe = self.pipe[:-1]
-                trans_pipe.fit_transform(X_train)
-                X_es = trans_pipe.transform(X_es)
-                clf_name = self.pipe.steps[-1][0]
-                fit_params = {f'{clf_name}__eval_set':[(X_es,y_es)],
-                              f'{clf_name}__eval_metric':eval_metric,
-                             f'{clf_name}__verbose':0}
-            else:
-                fit_params = {}
-        else:
-            fit_params = {}
-        
+        # If LGBM early stopping, then need to split off eval_set and define fit_params
+        # if isinstance(self.pipe[-1],LGBMClassifier):
+        #     if 'early_stopping_round' in self.pipe[-1].get_params():
+        #         if self.pipe[-1].get_params()['early_stopping_rounds'] is not None:
+        #             X_train,X_es,y_train,y_es = train_test_split(X_train,y_train,
+        #                                                        test_size=eval_size,
+        #                                                        stratify=y_train,
+        #                                                        random_state=self.random_state)
+        #         trans_pipe = self.pipe[:-1]
+        #         trans_pipe.fit_transform(X_train)
+        #         X_es = trans_pipe.transform(X_es)
+        #         clf_name = self.pipe.steps[-1][0]
+        #         fit_params = {f'{clf_name}__eval_set':[(X_es,y_es)],
+        #                       f'{clf_name}__eval_metric':eval_metric,
+        #                      f'{clf_name}__verbose':0}
+        #     else:
+        #         fit_params = {}
+        # else:
+        #     fit_params = {}
+        fit_params = {}
         pipe.fit(X_train,y_train,**fit_params)
             
         # SHAP will just explain classifier, so need transformed X_train and X_test
