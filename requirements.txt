@@ -4,7 +4,6 @@ asttokens==2.2.1
 attrs==23.1.0
 backcall==0.2.0
 blinker==1.6.2
-Brotli @ file:///Users/runner/miniforge3/conda-bld/brotli-split_1687884292427/work
 cachetools==5.3.1
 certifi==2023.5.7
 charset-normalizer==3.1.0
@@ -17,7 +16,6 @@ executing==1.2.0
 fonttools==4.40.0
 gitdb==4.0.10
 GitPython==3.1.31
-idna @ file:///home/conda/feedstock_root/build_artifacts/idna_1663625384323/work
 importlib-metadata==6.7.0
 ipython==8.14.0
 jedi==0.18.2
@@ -33,16 +31,13 @@ matplotlib==3.7.1
 matplotlib-inline==0.1.6
 mdurl==0.1.2
 numba==0.57.1
-numpy @ file:///Users/runner/miniforge3/conda-bld/numpy_1675039023929/work
-packaging @ file:///home/conda/feedstock_root/build_artifacts/packaging_1681337016113/work
+numpy==1.24.1
 pandas==2.0.2
 parso==0.8.3
 pexpect==4.8.0
 pickleshare==0.7.5
 Pillow==9.5.0
-platformdirs @ file:///home/conda/feedstock_root/build_artifacts/platformdirs_1690813113769/work
 plotly==5.15.0
-pooch @ file:///home/conda/feedstock_root/build_artifacts/pooch_1679580333621/work
 prompt-toolkit==3.0.38
 protobuf==4.23.3
 ptyprocess==0.7.0
@@ -53,11 +48,9 @@ Pygments==2.15.1
 Pympler==1.0.1
 pyparsing==3.1.0
 pyrsistent==0.19.3
-PySocks @ file:///home/conda/feedstock_root/build_artifacts/pysocks_1661604839144/work
 python-dateutil==2.8.2
 pytz==2023.3
 pytz-deprecation-shim==0.1.0.post0
-requests @ file:///home/conda/feedstock_root/build_artifacts/requests_1684774241324/work
 rich==13.4.2
 scikit-learn==1.2.2
 scipy==1.10.1
