@@ -5,7 +5,8 @@ import plotly.express as px
 from scipy import stats
 import pickle
 import shap
-# from lightgbm import LGBMClassifier
+import lightgbm as lgb
+from lightgbm import LGBMClassifier
 # from sklearn.ensemble import HistGradientBoostingClassifier
 
 ########################
@@ -524,7 +525,7 @@ The force plot will update as you adjust input features in the menu above.
 
     # SHAP will just explain classifier, so need transformed X_train and X_test
     pipe = study.pipe_fitted
-    X_trans, sample_trans = pipe[:-1].transform(study.X), pipe[:-1].transform(sample)
+    sample_trans = pipe[:-1].transform(sample)
             
     # # Need masker for linear model
     # masker = shap.maskers.Independent(data=X_train_trans)
@@ -534,10 +535,9 @@ The force plot will update as you adjust input features in the menu above.
     shap_values = explainer(sample_trans)
     sample_trans = pd.DataFrame(sample_trans,columns=pipe['col'].get_feature_names_out())
 
-    def st_shap(plot, height=None):
-        shap_html = f"<head>{shap.getjs()}</head><body>{plot.html()}</body>"
-        components.html(shap_html, height=height)
-
-    fig=shap.plots.force(explainer.expected_value,shap_values.values,sample_trans,
+    # def st_shap(plot, height=None):
+    #     shap_html = f"<head>{shap.getjs()}</head><body>{plot.html()}</body>"
+    #     components.html(shap_html, height=height)
+    fig=shap.plots.force(explainer.expected_value[1],shap_values.values[0][:,1],sample_trans,
                          figsize=(20,3),show=False,matplotlib=True)
     st.pyplot(fig)
