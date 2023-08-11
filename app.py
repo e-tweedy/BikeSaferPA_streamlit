@@ -39,9 +39,18 @@ with open('app_data.pickle', 'rb') as file:
 features = cat_features+flag_features+ord_features
 features.sort(key=lambda x:feature_names[x].lower())
 
-# Load trained model pipeline from pickle
-with open('study.pkl', 'rb') as file:
-    study = pickle.load(file)
+# Load trained classifier study object
+@st.cache_resource(show_spinner=False)
+def load_study():
+    """
+    Load the trained classifier pipeline
+    """
+    with open('study.pkl', 'rb') as file:
+        study = pickle.load(file)
+    return study
+    
+
+
 
 ################################
 ### Initialize app structure ###
@@ -408,6 +417,9 @@ Expand the following sections to adjust the factors in a hypothetical cyclist cr
 
 ### User inputs for model prediction ###
 
+# Load the trained classifier study object
+study = load_study()
+    
 # Initialize input sample.  User inputs will update values.
 sample = pd.DataFrame(columns = study.pipe['col'].feature_names_in_)
 
