@@ -521,7 +521,6 @@ with model_result_container:
     feature_names = study.pipe_fitted[-2].get_feature_names_out()
     pipe = study.pipe_fitted
     sample_trans = pipe[:-1].transform(sample)
-    st.write(sample)
     y_predict_proba = pipe.predict_proba(sample)[0,1]
 
     st.write(f'**BikeSaferPA predicts a :red[{100*y_predict_proba:.2f}%] probability that a cyclist suffers serious injury or fatality under these conditions.**')
