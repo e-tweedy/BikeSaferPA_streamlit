@@ -46,8 +46,7 @@ def load_study():
     Load the trained classifier pipeline
     """
     with open('study.pkl', 'rb') as file:
-        study = pickle.load(file)
-    return study
+        return pickle.load(file)
     
 
 
@@ -518,9 +517,14 @@ with model_result_container:
         sample.loc[0,feat]=1
 
     # Predict and report result
-    study.predict_proba_pipeline(X_test=sample)
+    # study.predict_proba_pipeline(X_test=sample)
+    feature_names = study.pipe_fitted[-2].get_feature_names_out()
+    pipe = study.pipe_fitted
+    sample_trans = pipe[:-1].transform(sample)
+    st.write(sample)
+    y_predict_proba = pipe.predict_proba(sample)[0,1]
 
-    st.write(f'**BikeSaferPA predicts a :red[{100*float(study.y_predict_proba):.2f}%] probability that a cyclist suffers serious injury or fatality under these conditions.**')
+    st.write(f'**BikeSaferPA predicts a :red[{100*y_predict_proba:.2f}%] probability that a cyclist suffers serious injury or fatality under these conditions.**')
 
 ### SHAP values ####
 
@@ -536,17 +540,20 @@ The force plot will update as you adjust input features in the menu above.
     """)
 
     # SHAP will just explain classifier, so need transformed X_train and X_test
-    pipe = study.pipe_fitted
-    sample_trans = pipe[:-1].transform(sample)
             
     # # Need masker for linear model
     # masker = shap.maskers.Independent(data=X_train_trans)
             
     # Initialize explainer and compute and store SHAP values as an explainer object
+    # shap_values_list = []
+    # for calibrated_classifier in clf.calibrated_classifiers_:
+    #     explainer = shap.TreeExplainer(calibrated_classifier.estimator,feature_names = pipe['col'].get_feature_names_out())
+    #     shap_values = explainer(sample_trans)
+    #     shap_values_list.append(shap_values.values)
+    # shap_values = np.array(shap_values_list).sum(axis=0) / len(shap_values_list)
     explainer = shap.TreeExplainer(pipe[-1], feature_names = pipe['col'].get_feature_names_out())
     shap_values = explainer(sample_trans)
     sample_trans = pd.DataFrame(sample_trans,columns=pipe['col'].get_feature_names_out())
-
     # def st_shap(plot, height=None):
     #     shap_html = f"<head>{shap.getjs()}</head><body>{plot.html()}</body>"
     #     components.html(shap_html, height=height)
