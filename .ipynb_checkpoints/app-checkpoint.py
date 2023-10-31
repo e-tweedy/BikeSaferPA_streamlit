@@ -114,6 +114,9 @@ You also have the option to restrict to Philadelpha county only, or the PA count
 Expand the toolbox below to choose plot options.
     """)
 
+# Copy dataframe for this tab
+crashes_time = crashes.copy()
+
 ### User input - settings for plot ###
 
 with time_settings_container:
@@ -163,41 +166,42 @@ with time_settings_container:
                     time_bin_data[k][feat][2]=st.checkbox(time_bin_data[k][feat][0],key=f'time_{feat}')
                     # if checked, filter samples and add feature to plot title addendum
                     if time_bin_data[k][feat][2]:
-                        crashes = crashes[crashes[time_bin_data[k][feat][1]]==1]
+                        crashes_time = crashes_time[crashes_time[time_bin_data[k][feat][1]]==1]
                         title_add+= ', '+time_bin_data[k][feat][0].split('one ')[-1]
 
 ### Post-process user-selected setting data ###
                         
+
 # Geographic restriction
 if geo != 'statewide':
-    crashes = crashes[crashes.COUNTY.isin(geo_data[geo][1])]
+    crashes_time[crashes_time.COUNTY.isin(geo_data[geo][1])]
 # Relegate rare categories to 'other' for plot readability
 if stratify=='int_type':
-    crashes['INTERSECT_TYPE']=crashes['INTERSECT_TYPE']\
-    .replace({cat:'other' for cat in crashes.INTERSECT_TYPE.value_counts().index[3:]})
+    crashes_time['INTERSECT_TYPE']=crashes_time['INTERSECT_TYPE']\
+    .replace({cat:'other' for cat in crashes_time.INTERSECT_TYPE.value_counts().index[3:]})
 if stratify=='coll_type':
-    crashes['COLLISION_TYPE']=crashes['COLLISION_TYPE']\
-    .replace({cat:'other' for cat in crashes.COLLISION_TYPE.value_counts().index[6:]})
+    crashes_time['COLLISION_TYPE']=crashes_time['COLLISION_TYPE']\
+    .replace({cat:'other' for cat in crashes_time.COLLISION_TYPE.value_counts().index[6:]})
 if stratify=='weather':
-    crashes['WEATHER']=crashes['WEATHER']\
-    .replace({cat:'other' for cat in crashes.WEATHER.value_counts().index[5:]})
+    crashes_time['WEATHER']=crashes_time['WEATHER']\
+    .replace({cat:'other' for cat in crashes_time.WEATHER.value_counts().index[5:]})
 if stratify=='tcd':
-    crashes['TCD_TYPE']=crashes['TCD_TYPE']\
-    .replace({cat:'other' for cat in crashes.TCD_TYPE.value_counts().index[3:]})
-crashes=crashes.dropna(subset=period_data[period][1])
+    crashes_time['TCD_TYPE']=crashes_time['TCD_TYPE']\
+    .replace({cat:'other' for cat in crashes_time.TCD_TYPE.value_counts().index[3:]})
+crashes_time=crashes_time.dropna(subset=period_data[period][1])
 
 # Order categories in descending order by frequency
-category_orders = {time_cat_data[cat][1]:list(crashes[time_cat_data[cat][1]].value_counts().index) for cat in time_cat_data}
+category_orders = {time_cat_data[cat][1]:list(crashes_time[time_cat_data[cat][1]].value_counts().index) for cat in time_cat_data}
 
 # Define cohort
 if cohort == 'inj':
-    crashes = crashes[crashes.BICYCLE_SUSP_SERIOUS_INJ_COUNT > 0]
+    crashes_time = crashes_time[crashes_time.BICYCLE_SUSP_SERIOUS_INJ_COUNT > 0]
 elif cohort == 'fat':
-    crashes = crashes[crashes.BICYCLE_DEATH_COUNT > 0]
+    crashes_time = crashes_time[crashes_time.BICYCLE_DEATH_COUNT > 0]
 
 # Replace day,month numbers with string labels
 if period in ['day','month']:
-    crashes[period_data[period][1]] = crashes[period_data[period][1]].apply(lambda x:period_data[period][2][x-1])
+    crashes_time[period_data[period][1]] = crashes_time[period_data[period][1]].apply(lambda x:period_data[period][2][x-1])
 
 # Plot title addendum
 if len(title_add)>0:
@@ -214,8 +218,8 @@ else:
 
 with time_plot_container:
     # Plot samples if any, else report no samples remain
-    if crashes.shape[0]>0:
-        fig = px.histogram(crashes, 
+    if crashes_time.shape[0]>0:
+        fig = px.histogram(crashes_time, 
                            x=period_data[period][1],
                            color=color,
                            nbins=len(period_data[period][2]),
@@ -248,6 +252,9 @@ This tool provides interactive maps of crash events, either statewide or in one 
 
 Expand the menu below to adjust map options.
     """)
+
+# Copy dataframe for this tab
+crashes_map = crashes.copy()
 
 ### User input - settings for map plot ###
 
@@ -290,14 +297,14 @@ else:
     
     if county is not None:
         if animate_by == 'year':
-            color_dots = len(crashes.query('COUNTY==@county[0] and CRASH_YEAR==2002')\
+            color_dots = len(crashes_map.query('COUNTY==@county[0] and CRASH_YEAR==2002')\
                        .BICYCLE_DEATH_COUNT.unique())+\
-                        len(crashes.query('COUNTY==@county[0] and CRASH_YEAR==2002')\
+                        len(crashes_map.query('COUNTY==@county[0] and CRASH_YEAR==2002')\
                        .BICYCLE_SUSP_SERIOUS_INJ_COUNT.unique()) > 3
         else:
-            color_dots = len(crashes.query('COUNTY==@county[0] and CRASH_YEAR==2002 and CRASH_MONTH==1')\
+            color_dots = len(crashes_map.query('COUNTY==@county[0] and CRASH_YEAR==2002 and CRASH_MONTH==1')\
                        .BICYCLE_DEATH_COUNT.unique())+\
-                       len(crashes.query('COUNTY==@county[0] and CRASH_YEAR==2002 and CRASH_MONTH==1')\
+                       len(crashes_map.query('COUNTY==@county[0] and CRASH_YEAR==2002 and CRASH_MONTH==1')\
                        .BICYCLE_SUSP_SERIOUS_INJ_COUNT.unique()) > 3
 if color_dots==False:
     st.markdown("""
@@ -312,7 +319,7 @@ from lib.vis_data import plot_map
 
 with map_plot_container:
     fig = plot_map(
-        df=crashes,county=county,animate=animate,
+        df=crashes_map,county=county,animate=animate,
         color_dots=color_dots,animate_by=animate_by,
         show_fig=False,return_fig=True,
     )
@@ -337,6 +344,9 @@ Expand the following menu to choose a feature, and the graph will show its distr
 Pay particular attention to feature values which become more or less prevalent among cyclists suffering serious injury or death - for instance, 6.2% of all cyclists statewide were involved in a head-on collision, whereas 11.8% of those with serious injury or fatality were in a head-on collision.
     """)
 
+# Copy dataframe for this tab
+cyclists_feat = cyclists.copy()
+
 ### User input - settings for plot ###
 
 with feature_settings_container:
@@ -360,13 +370,13 @@ with feature_settings_container:
 from lib.vis_data import feat_perc,feat_perc_bar
 # Geographic restriction
 if geo != 'statewide':
-    cyclists = cyclists[cyclists.COUNTY.isin(geo_data[geo][1])]
+    cyclists_feat = cyclists_feat[cyclists_feat.COUNTY.isin(geo_data[geo][1])]
     
 # Recast binary and day of week data
 if feature not in ord_features:
-    cyclists[feature]=cyclists[feature].replace({1:'yes',0:'no'})
+    cyclists_feat[feature]=cyclists_feat[feature].replace({1:'yes',0:'no'})
 if feature == 'DAY_OF_WEEK':
-    cyclists[feature]=cyclists[feature].astype(str)
+    cyclists_feat[feature]=cyclists_feat[feature].astype(str)
 
 ### Build and display plot ###
 
@@ -375,7 +385,7 @@ with feature_plot_container:
     # Generate plot
     sort = False if feature in ord_features else True
     fig = feat_perc_bar(
-        feature,cyclists, feat_name=feature_names[feature],
+        feature,cyclists_feat, feat_name=feature_names[feature],
         return_fig=True,show_fig=False,sort=sort
     )
 
