@@ -560,9 +560,21 @@ The force plot will update as you adjust input features in the menu above.
     #     shap_values = explainer(sample_trans)
     #     shap_values_list.append(shap_values.values)
     # shap_values = np.array(shap_values_list).sum(axis=0) / len(shap_values_list)
-    explainer = shap.TreeExplainer(pipe[-1], feature_names = pipe['col'].get_feature_names_out())
+
+    #Retrieve feature names
+    feature_names = pipe['col'].get_feature_names_out()
+    
+    explainer = shap.TreeExplainer(pipe[-1], feature_names = feature_names)
     shap_values = explainer(sample_trans)
-    sample_trans = pd.DataFrame(sample_trans,columns=pipe['col'].get_feature_names_out())
+    sample_trans = pd.DataFrame(sample_trans,columns=feature_names)
+
+    # Get arrays of category names from OrdinalEncoder
+    cat_names = study.pipe_fitted[-2].transformers_[0][1][-1].categories_
+    for ind,feature in enumerate(feature_names):
+        if ind < 8:
+            cat_dict = {k:v for k,v in enumerate(cat_names[ind])}
+            sample_trans[feature] = sample_trans[feature].replace(cat_dict)
+    
     # def st_shap(plot, height=None):
     #     shap_html = f"<head>{shap.getjs()}</head><body>{plot.html()}</body>"
     #     components.html(shap_html, height=height)
